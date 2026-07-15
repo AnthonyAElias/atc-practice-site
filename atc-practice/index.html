@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sector Console Practice</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">CAP / TopSky inspired training console</p>
+        <h1>Sector Console Practice</h1>
+      </div>
+      <div class="session-panel" aria-label="Session status">
+        <span id="connectionStatus" class="status-pill status-ok" role="status">Connected</span>
+        <span>Sector <strong>NORD-17</strong></span>
+        <span>Scenario <strong id="scenarioName">Morning Push</strong></span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="radar-panel" aria-labelledby="radarTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Surveillance</p>
+            <h2 id="radarTitle">Radar Situation Display</h2>
+          </div>
+          <div class="toolbar" aria-label="Radar tools">
+            <button id="toggleRangeRings" type="button" aria-pressed="true">Range rings</button>
+            <button id="injectConflict" type="button">Inject conflict</button>
+            <button id="pauseFeed" type="button" aria-pressed="false">Pause feed</button>
+          </div>
+        </div>
+
+        <div id="radarScope" class="radar-scope" aria-label="Radar scope" role="img">
+          <div class="sweep"></div>
+          <button class="track track-selected" data-flight="SAS482" style="--x: 58%; --y: 34%" type="button">
+            <span>SAS482</span>
+            <em>SQ 4231</em>
+            <small>FL340</small>
+          </button>
+          <button class="track" data-flight="DLH219" style="--x: 34%; --y: 54%" type="button">
+            <span>DLH219</span>
+            <em>SQ 2740</em>
+            <small>FL320</small>
+          </button>
+          <button class="track" data-flight="BAW771" style="--x: 68%; --y: 62%" type="button">
+            <span>BAW771</span>
+            <em>SQ 6152</em>
+            <small>FL360</small>
+          </button>
+          <button class="track" data-flight="AFR108" style="--x: 44%; --y: 26%" type="button">
+            <span>AFR108</span>
+            <em>SQ 7314</em>
+            <small>FL330</small>
+          </button>
+        </div>
+      </section>
+
+      <aside class="details-panel" aria-labelledby="detailTitle">
+        <div class="panel-heading compact">
+          <div>
+            <p class="eyebrow">Selected track</p>
+            <h2 id="detailTitle">SAS482</h2>
+          </div>
+          <span id="trackStatus" class="status-pill status-caution">Monitoring</span>
+        </div>
+
+        <dl class="detail-grid">
+          <div><dt>Callsign</dt><dd id="detailCallsign">SAS482</dd></div>
+          <div><dt>Level</dt><dd id="detailLevel">FL340</dd></div>
+          <div><dt>Heading</dt><dd id="detailHeading">087</dd></div>
+          <div><dt>Speed</dt><dd id="detailSpeed">M .78</dd></div>
+          <div><dt>Route</dt><dd id="detailRoute">NARAK - LUXOR</dd></div>
+          <div><dt>Clearance</dt><dd id="detailClearance">Maintain FL340</dd></div>
+        </dl>
+
+        <form id="clearanceForm" class="clearance-form" aria-label="Issue clearance">
+          <label for="clearanceType">Clearance type</label>
+          <select id="clearanceType" name="clearanceType">
+            <option value="maintain">Maintain level</option>
+            <option value="climb">Climb</option>
+            <option value="descend">Descend</option>
+            <option value="turn">Turn heading</option>
+          </select>
+
+          <label for="clearanceValue">Value</label>
+          <input id="clearanceValue" name="clearanceValue" placeholder="FL350 or 090" required />
+
+          <button type="submit">Issue clearance</button>
+          <p id="clearanceMessage" class="form-message" role="status" aria-live="polite"></p>
+        </form>
+      </aside>
+
+      <section class="traffic-panel" aria-labelledby="trafficTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Traffic</p>
+            <h2 id="trafficTitle">Flight List</h2>
+          </div>
+          <label class="filter-control" for="flightFilter">
+            Filter
+            <input id="flightFilter" type="search" placeholder="Callsign or level" />
+          </label>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Callsign</th>
+              <th scope="col">Level</th>
+              <th scope="col">Route</th>
+              <th scope="col">State</th>
+            </tr>
+          </thead>
+          <tbody id="flightTable">
+            <tr data-flight-row="SAS482"><td>SAS482</td><td>FL340</td><td>NARAK-LUXOR</td><td><span class="tag caution">Monitoring</span></td></tr>
+            <tr data-flight-row="DLH219"><td>DLH219</td><td>FL320</td><td>VEBEK-DINAN</td><td><span class="tag normal">Coordinated</span></td></tr>
+            <tr data-flight-row="BAW771"><td>BAW771</td><td>FL360</td><td>ARFOX-TELMO</td><td><span class="tag normal">Coordinated</span></td></tr>
+            <tr data-flight-row="AFR108"><td>AFR108</td><td>FL330</td><td>MERLU-NARAK</td><td><span class="tag warning">Pending</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="alerts-panel" aria-labelledby="alertsTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Safety nets</p>
+            <h2 id="alertsTitle">Alerts</h2>
+          </div>
+          <button id="ackAll" type="button">Acknowledge all</button>
+        </div>
+        <ul id="alertList" class="alert-list">
+          <li data-alert-id="A-1001">
+            <strong>STCA advisory</strong>
+            <span>SAS482 / AFR108 predicted loss of separation in 06:20</span>
+            <button type="button" data-ack-alert="A-1001">Acknowledge</button>
+          </li>
+          <li data-alert-id="A-1002">
+            <strong>Coordination pending</strong>
+            <span>AFR108 handoff requires adjacent sector response</span>
+            <button type="button" data-ack-alert="A-1002">Acknowledge</button>
+          </li>
+        </ul>
+      </section>
+
+      <section class="messages-panel" aria-labelledby="messagesTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Coordination</p>
+            <h2 id="messagesTitle">Message Queue</h2>
+          </div>
+          <button id="loadMessage" type="button">Load next</button>
+        </div>
+        <div id="messageQueue" class="message-list" aria-live="polite">
+          <article>
+            <h3>Inbound estimate</h3>
+            <p>DLH219 estimating VEBEK at 10:42Z, requested FL320.</p>
+            <button type="button" data-message-action="accept">Accept</button>
+            <button type="button" data-message-action="reject">Reject</button>
+          </article>
+        </div>
+      </section>
+
+      <section class="strips-panel" aria-labelledby="stripsTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Planning</p>
+            <h2 id="stripsTitle">Electronic Flight Strips</h2>
+          </div>
+        </div>
+        <div class="strip-board">
+          <button class="strip active" type="button">SAS482 <span>FL340</span></button>
+          <button class="strip" type="button">DLH219 <span>FL320</span></button>
+          <button class="strip" type="button">BAW771 <span>FL360</span></button>
+          <button class="strip" type="button">AFR108 <span>FL330</span></button>
+        </div>
+      </section>
+
+      <section class="log-panel" aria-labelledby="logTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Evidence</p>
+            <h2 id="logTitle">Event Log</h2>
+          </div>
+          <button id="exportLog" type="button">Export log</button>
+        </div>
+        <ol id="eventLog" class="event-log" aria-live="polite">
+          <li>10:31:08Z Scenario Morning Push loaded.</li>
+          <li>10:31:12Z SAS482 selected.</li>
+        </ol>
+      </section>
+    </main>
+
+    <dialog id="exportDialog" aria-labelledby="exportTitle">
+      <h2 id="exportTitle">Validation Evidence Export</h2>
+      <p id="exportSummary">Event log prepared for download.</p>
+      <textarea id="exportPayload" readonly></textarea>
+      <form method="dialog">
+        <button type="submit">Close</button>
+      </form>
+    </dialog>
+
+    <script src="./app.js?v=motion-1"></script>
+  </body>
+</html>
