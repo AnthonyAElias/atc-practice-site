@@ -64,6 +64,89 @@ const eventLog = document.getElementById("eventLog");
 const radarScope = document.getElementById("radarScope");
 const connectionStatus = document.getElementById("connectionStatus");
 const tracks = [...document.querySelectorAll(".track")];
+const puertoRicoBoundarySources = [
+  "./assets/puerto-rico-boundary.geojson",
+  "https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/PRI/ADM2/geoBoundaries-PRI-ADM2_simplified.geojson",
+];
+
+async function fetchFirstAvailableJson(urls) {
+  let lastError;
+
+  for (const url of urls) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`GeoJSON request failed: ${response.status}`);
+      return response.json();
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+}
+
+function initializeLeafletMap() {
+  if (!window.L) {
+    addLog("Leaflet map library unavailable.");
+    return;
+  }
+
+  const map = L.map("leafletMap", {
+    center: [18.2208, -66.5901],
+    zoom: 8,
+    zoomControl: false,
+    attributionControl: true,
+    dragging: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    boxZoom: false,
+    keyboard: false,
+    touchZoom: false,
+  });
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap contributors",
+  }).addTo(map);
+
+  fetchFirstAvailableJson(puertoRicoBoundarySources)
+    .then((geojson) => {
+      L.geoJSON(geojson, {
+        style: {
+          color: "#75d7d8",
+          weight: 1.4,
+          opacity: 0.95,
+          fillColor: "#2f493a",
+          fillOpacity: 0.34,
+        },
+      }).addTo(map);
+    })
+    .catch(() => addLog("Puerto Rico boundary layer failed to load."));
+
+  [
+    { code: "SJU", name: "Luis Munoz Marin Intl", latlng: [18.4394, -66.0018] },
+    { code: "PSE", name: "Mercedita", latlng: [18.0083, -66.5630] },
+    { code: "VQS", name: "Antonio Rivera Rodriguez", latlng: [18.1348, -65.4936] },
+  ].forEach((airport) => {
+    L.circleMarker(airport.latlng, {
+      radius: 4,
+      color: "#83ffff",
+      weight: 1,
+      fillColor: "#d345cb",
+      fillOpacity: 0.9,
+    }).bindTooltip(`${airport.code} ${airport.name}`, { direction: "top" }).addTo(map);
+
+    L.marker(airport.latlng, {
+      interactive: false,
+      icon: L.divIcon({
+        className: "airport-label",
+        html: airport.code,
+        iconSize: [36, 16],
+        iconAnchor: [-8, 8],
+      }),
+    }).addTo(map);
+  });
+}
 
 function addLog(message) {
   const item = document.createElement("li");
@@ -267,5 +350,6 @@ function advanceTracks() {
   }
 }
 
+initializeLeafletMap();
 applyTrackPositions();
 setInterval(advanceTracks, 100);
