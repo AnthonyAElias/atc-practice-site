@@ -9,7 +9,7 @@
   <body>
     <header class="topbar">
       <div>
-        <p class="eyebrow">CAP / TopSky inspired training console</p>
+        <p class="eyebrow">MAIN / SURVEILLANCE / SAN JUAN FIR</p>
         <h1>Sector Console Practice</h1>
       </div>
       <div class="session-panel" aria-label="Session status">
@@ -34,6 +34,58 @@
         </div>
 
         <div id="radarScope" class="radar-scope" aria-label="Radar scope" role="img">
+          <div class="map-layer" aria-hidden="true">
+            <svg class="puerto-rico-map" viewBox="0 0 900 520" focusable="false">
+              <defs>
+                <filter id="softGlow">
+                  <feGaussianBlur stdDeviation="2.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <rect class="map-water" x="0" y="0" width="900" height="520" />
+              <path class="range-volume volume-a" d="M520 0 C670 75 695 240 610 360 C545 450 395 445 322 360 C230 252 275 90 418 0 Z" />
+              <path class="range-volume volume-b" d="M654 35 C810 5 910 115 930 260 C948 392 842 503 708 494 C590 486 514 384 542 268 C566 166 575 62 654 35 Z" />
+              <path class="range-volume volume-c" d="M212 -14 C346 21 394 150 352 262 C312 370 196 408 92 352 C-12 296 -34 155 42 68 C84 20 146 -29 212 -14 Z" />
+              <path class="coastline" d="M255 304 C306 286 356 279 409 283 C466 287 510 273 562 268 C616 263 677 280 729 306 C690 330 610 344 538 337 C474 331 431 350 366 346 C314 343 272 329 255 304 Z" />
+              <path class="island-ridge" d="M314 305 C371 296 424 300 474 306 C523 313 584 301 664 312" />
+              <path class="shore-line" d="M282 322 C356 338 436 332 502 325 C579 316 634 324 705 333" />
+              <path class="route-line" d="M124 418 L758 120" />
+              <path class="route-line dim" d="M176 118 L715 438" />
+              <circle class="airport-dot" cx="618" cy="292" r="4" />
+              <circle class="airport-dot" cx="338" cy="322" r="4" />
+              <circle class="airport-dot" cx="720" cy="314" r="4" />
+              <text class="map-label" x="630" y="287">SJU</text>
+              <text class="map-label" x="350" y="318">PSE</text>
+              <text class="map-label" x="731" y="310">NRR</text>
+              <text class="coord-label" x="54" y="54">18N 066W</text>
+              <text class="coord-label" x="748" y="478">SAN JUAN FIR</text>
+            </svg>
+          </div>
+          <div class="map-menu" aria-hidden="true">
+            <div class="map-menu-title">Maps [MAIN]</div>
+            <div class="map-menu-body">
+              <div class="map-menu-nav">
+                <span>MET</span>
+                <span>Flex Tracks</span>
+                <strong>SURVEILLANCE</strong>
+                <span>SUA</span>
+                <span>SECTORS</span>
+                <span>MSAW inhibition</span>
+                <span>STCA</span>
+                <span>AIRPORT</span>
+              </div>
+              <div class="map-menu-list">
+                <label><input type="checkbox" checked /> ADSB_ALL</label>
+                <label><input type="checkbox" checked /> ADSB_AS</label>
+                <label><input type="checkbox" /> ADSB_BOV</label>
+                <label><input type="checkbox" checked /> ADSB_SJU</label>
+                <label><input type="checkbox" /> ADSB_PSE</label>
+              </div>
+            </div>
+          </div>
           <div class="sweep"></div>
           <button class="track track-selected" data-flight="SAS482" style="--x: 58%; --y: 34%" type="button">
             <span>SAS482</span>
@@ -201,6 +253,6 @@
       </form>
     </dialog>
 
-    <script src="./app.js?v=motion-1"></script>
+    <script src="./app.js?v=hmi-map-1"></script>
   </body>
 </html>
