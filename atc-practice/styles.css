@@ -223,11 +223,18 @@ aside {
 }
 
 .coastline {
-  fill: rgba(55, 68, 61, 0.82);
+  fill: rgba(54, 73, 61, 0.9);
   stroke: #183d48;
   stroke-width: 3;
 }
 
+.outer-island {
+  fill: rgba(54, 73, 61, 0.88);
+  stroke: #183d48;
+  stroke-width: 2;
+}
+
+.coast-detail,
 .island-ridge,
 .shore-line {
   fill: none;
@@ -254,10 +261,23 @@ aside {
 }
 
 .map-label,
+.island-label,
+.island-name,
 .coord-label {
   fill: #d4e3a0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 16px;
+}
+
+.island-label {
+  fill: #b9c78b;
+  font-size: 10px;
+}
+
+.island-name {
+  fill: rgba(223, 233, 181, 0.8);
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .coord-label {
