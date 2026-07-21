@@ -100,15 +100,15 @@ function initializeLeafletMap() {
   if (!mapContainer) return;
 
   if (leafletMap) {
-    leafletMap.setView(defaultMapView.center, defaultMapView.zoom);
     leafletMap.invalidateSize();
     return;
   }
 
-  const refreshMapViewport = () => {
-    if (!leafletMap) return;
+  let tilesLoaded = false;
+  let boundaryLoaded = false;
+  const invalidateAfterLayersLoad = () => {
+    if (!leafletMap || !tilesLoaded || !boundaryLoaded) return;
     leafletMap.invalidateSize();
-    leafletMap.setView(defaultMapView.center, defaultMapView.zoom);
   };
 
   leafletMap = L.map(mapContainer, {
@@ -127,7 +127,10 @@ function initializeLeafletMap() {
     maxZoom: 19,
     attribution: "&copy; OpenStreetMap contributors",
   });
-  tileLayer.on("load", refreshMapViewport);
+  tileLayer.on("load", () => {
+    tilesLoaded = true;
+    invalidateAfterLayersLoad();
+  });
   tileLayer.addTo(leafletMap);
 
   leafletMap.setView(defaultMapView.center, defaultMapView.zoom);
@@ -144,7 +147,8 @@ function initializeLeafletMap() {
         },
       });
       boundaryLayer.addTo(leafletMap);
-      refreshMapViewport();
+      boundaryLoaded = true;
+      invalidateAfterLayersLoad();
     })
     .catch(() => addLog("Puerto Rico boundary layer failed to load."));
 
@@ -181,7 +185,6 @@ function initializeLeafletMapWhenReady() {
   const settleMapSize = () => {
     if (!leafletMap) return;
     leafletMap.invalidateSize();
-    leafletMap.setView(defaultMapView.center, defaultMapView.zoom);
   };
   const startMap = () => {
     initializeLeafletMap();
