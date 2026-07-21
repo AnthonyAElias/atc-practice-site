@@ -41,6 +41,7 @@ let selectedFlight = "SAS482";
 let messageCounter = 1;
 let feedPaused = false;
 let lastTrackFrame = Date.now();
+let leafletMap = null;
 
 const trackStates = {
   SAS482: { x: 58, y: 34, vx: 1.1, vy: 0.55 },
@@ -68,6 +69,10 @@ const puertoRicoBoundarySources = [
   "./assets/puerto-rico-boundary.geojson",
   "https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/PRI/ADM2/geoBoundaries-PRI-ADM2_simplified.geojson",
 ];
+const defaultMapView = {
+  center: [18.4655, -66.1057],
+  zoom: 11,
+};
 
 async function fetchFirstAvailableJson(urls) {
   let lastError;
@@ -91,9 +96,22 @@ function initializeLeafletMap() {
     return;
   }
 
-  const map = L.map("leafletMap", {
-    center: [18.2208, -66.5901],
-    zoom: 8,
+  const mapContainer = document.getElementById("leafletMap");
+  if (!mapContainer) return;
+
+  if (leafletMap) {
+    leafletMap.setView(defaultMapView.center, defaultMapView.zoom);
+    leafletMap.invalidateSize();
+    return;
+  }
+
+  const refreshMapViewport = () => {
+    if (!leafletMap) return;
+    leafletMap.invalidateSize();
+    leafletMap.setView(defaultMapView.center, defaultMapView.zoom);
+  };
+
+  leafletMap = L.map(mapContainer, {
     zoomControl: false,
     attributionControl: true,
     dragging: false,
@@ -103,15 +121,20 @@ function initializeLeafletMap() {
     keyboard: false,
     touchZoom: false,
   });
+  window.atcPracticeMap = leafletMap;
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  const tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: "&copy; OpenStreetMap contributors",
-  }).addTo(map);
+  });
+  tileLayer.on("load", refreshMapViewport);
+  tileLayer.addTo(leafletMap);
+
+  leafletMap.setView(defaultMapView.center, defaultMapView.zoom);
 
   fetchFirstAvailableJson(puertoRicoBoundarySources)
     .then((geojson) => {
-      L.geoJSON(geojson, {
+      const boundaryLayer = L.geoJSON(geojson, {
         style: {
           color: "#75d7d8",
           weight: 1.4,
@@ -119,7 +142,9 @@ function initializeLeafletMap() {
           fillColor: "#2f493a",
           fillOpacity: 0.34,
         },
-      }).addTo(map);
+      });
+      boundaryLayer.addTo(leafletMap);
+      refreshMapViewport();
     })
     .catch(() => addLog("Puerto Rico boundary layer failed to load."));
 
@@ -134,7 +159,7 @@ function initializeLeafletMap() {
       weight: 1,
       fillColor: "#d345cb",
       fillOpacity: 0.9,
-    }).bindTooltip(`${airport.code} ${airport.name}`, { direction: "top" }).addTo(map);
+    }).bindTooltip(`${airport.code} ${airport.name}`, { direction: "top" }).addTo(leafletMap);
 
     L.marker(airport.latlng, {
       interactive: false,
@@ -144,8 +169,37 @@ function initializeLeafletMap() {
         iconSize: [36, 16],
         iconAnchor: [-8, 8],
       }),
-    }).addTo(map);
+    }).addTo(leafletMap);
   });
+}
+
+function initializeLeafletMapWhenReady() {
+  const mapContainer = document.getElementById("leafletMap");
+  if (!mapContainer) return;
+
+  const containerHasSize = () => mapContainer.clientWidth > 0 && mapContainer.clientHeight > 0;
+  const settleMapSize = () => {
+    if (!leafletMap) return;
+    leafletMap.invalidateSize();
+    leafletMap.setView(defaultMapView.center, defaultMapView.zoom);
+  };
+  const startMap = () => {
+    initializeLeafletMap();
+    requestAnimationFrame(() => requestAnimationFrame(settleMapSize));
+  };
+
+  if (containerHasSize()) {
+    startMap();
+  } else {
+    const observer = new ResizeObserver(() => {
+      if (!containerHasSize()) return;
+      observer.disconnect();
+      startMap();
+    });
+    observer.observe(mapContainer);
+  }
+
+  window.addEventListener("resize", settleMapSize);
 }
 
 function addLog(message) {
@@ -350,6 +404,6 @@ function advanceTracks() {
   }
 }
 
-initializeLeafletMap();
+initializeLeafletMapWhenReady();
 applyTrackPositions();
 setInterval(advanceTracks, 100);
