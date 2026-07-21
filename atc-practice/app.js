@@ -42,6 +42,7 @@ let messageCounter = 1;
 let feedPaused = false;
 let lastTrackFrame = Date.now();
 let leafletMap = null;
+let conflictInjected = false;
 
 const trackStates = {
   SAS482: { x: 58, y: 34, vx: 1.1, vy: 0.55 },
@@ -245,12 +246,15 @@ document.querySelectorAll(".strip").forEach((strip) => {
   strip.addEventListener("click", () => selectFlight(strip.textContent.trim().split(" ")[0]));
 });
 
-document.getElementById("toggleRangeRings").addEventListener("click", (event) => {
-  const pressed = event.currentTarget.getAttribute("aria-pressed") === "true";
-  event.currentTarget.setAttribute("aria-pressed", String(!pressed));
-  radarScope.classList.toggle("no-rings", pressed);
-  addLog(`Range rings ${pressed ? "hidden" : "shown"}.`);
-});
+const toggleRangeRings = document.getElementById("toggleRangeRings");
+if (toggleRangeRings) {
+  toggleRangeRings.addEventListener("click", (event) => {
+    const pressed = event.currentTarget.getAttribute("aria-pressed") === "true";
+    event.currentTarget.setAttribute("aria-pressed", String(!pressed));
+    radarScope.classList.toggle("no-rings", pressed);
+    addLog(`Range rings ${pressed ? "hidden" : "shown"}.`);
+  });
+}
 
 document.getElementById("pauseFeed").addEventListener("click", (event) => {
   const pressed = event.currentTarget.getAttribute("aria-pressed") === "true";
@@ -264,8 +268,20 @@ document.getElementById("pauseFeed").addEventListener("click", (event) => {
 });
 
 document.getElementById("injectConflict").addEventListener("click", () => {
-  document.querySelector('[data-flight="SAS482"]').classList.add("conflict");
-  document.querySelector('[data-flight="AFR108"]').classList.add("conflict");
+  conflictInjected = !conflictInjected;
+  document.getElementById("injectConflict").textContent = conflictInjected ? "Reset conflict" : "Inject conflict";
+  document.querySelector('[data-flight="SAS482"]').classList.toggle("conflict", conflictInjected);
+  document.querySelector('[data-flight="AFR108"]').classList.toggle("conflict", conflictInjected);
+
+  const existingAlert = document.querySelector('[data-alert-id="A-1003"]');
+  if (!conflictInjected) {
+    existingAlert?.remove();
+    addLog("Conflict scenario reset.");
+    return;
+  }
+
+  if (existingAlert) return;
+
   const item = document.createElement("li");
   item.dataset.alertId = "A-1003";
   item.innerHTML = '<strong>Conflict alert</strong><span>SAS482 / AFR108 separation minimum breached in test scenario</span><button type="button" data-ack-alert="A-1003">Acknowledge</button>';
@@ -324,11 +340,36 @@ document.getElementById("messageQueue").addEventListener("click", (event) => {
 });
 
 document.getElementById("exportLog").addEventListener("click", () => {
-  const logText = [...eventLog.querySelectorAll("li")].map((item) => item.textContent).join("\n");
-  document.getElementById("exportPayload").value = logText;
-  document.getElementById("exportSummary").textContent = `${eventLog.querySelectorAll("li").length} events prepared for validation evidence.`;
-  document.getElementById("exportDialog").showModal();
+  const rows = [...eventLog.querySelectorAll("li")].map((item, index) => {
+    const text = item.textContent.trim();
+    const timeMatch = text.match(/^(\d{2}:\d{2}:\d{2}Z)\s+(.*)$/);
+    return [
+      index + 1,
+      timeMatch?.[1] || "",
+      timeMatch?.[2] || text,
+    ];
+  });
+  const csv = [
+    ["Sequence", "Time", "Event"],
+    ...rows,
+  ].map((row) => row.map(formatCsvCell).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `atc-event-log-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.hidden = true;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+  addLog(`${rows.length} events exported to CSV.`);
 });
+
+function formatCsvCell(value) {
+  const text = String(value);
+  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
 
 function applyTrackPositions() {
   tracks.forEach((track) => {
