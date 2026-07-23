@@ -35,6 +35,7 @@
           <div class="toolbar" aria-label="Radar tools">
             <button id="toggleRangeRings" type="button" aria-pressed="true" hidden>Range rings</button>
             <button id="injectConflict" type="button">Inject conflict</button>
+            <button id="openFlightPlan" type="button">Flight plan</button>
             <button id="pauseFeed" type="button" aria-pressed="false">Pause feed</button>
           </div>
         </div>
@@ -232,11 +233,148 @@
       </form>
     </dialog>
 
+    <dialog id="flightPlanDialog" class="flight-plan-dialog" aria-labelledby="flightPlanTitle">
+      <div class="flight-plan-window">
+        <div class="flight-plan-titlebar">
+          <h2 id="flightPlanTitle">Flight Plan</h2>
+          <form method="dialog">
+            <button type="submit" aria-label="Close flight plan">x</button>
+          </form>
+        </div>
+
+        <div class="flight-plan-search">
+          <form id="flightPlanSearchForm" class="flight-plan-criteria" aria-label="Flight plan search criteria">
+            <div class="criteria-row">
+              <label for="fpSearchCallsign">CALLSIGN</label>
+              <input id="fpSearchCallsign" name="callsign" autocomplete="off" />
+            </div>
+            <div class="criteria-row">
+              <label for="fpSearchAdep">ADEP</label>
+              <input id="fpSearchAdep" name="adep" autocomplete="off" />
+            </div>
+            <div class="criteria-row">
+              <label for="fpSearchAdes">ADES</label>
+              <input id="fpSearchAdes" name="ades" autocomplete="off" />
+            </div>
+            <div class="criteria-row">
+              <label for="fpSearchEobt">EOBT</label>
+              <input id="fpSearchEobt" name="eobt" autocomplete="off" />
+            </div>
+            <div class="criteria-row">
+              <label for="fpSearchDof">DOF</label>
+              <input id="fpSearchDof" name="dof" autocomplete="off" />
+            </div>
+            <fieldset class="state-criteria">
+              <legend>STATE</legend>
+              <label><input type="checkbox" name="state" value="INACTIVE" checked /> I</label>
+              <label><input type="checkbox" name="state" value="PENDING" checked /> P</label>
+              <label><input type="checkbox" name="state" value="ACTIVE" checked /> A</label>
+              <label><input type="checkbox" name="state" value="DELAY" checked /> D</label>
+            </fieldset>
+            <div class="flight-plan-actions">
+              <button type="submit">Search</button>
+              <button id="clearFlightPlanSearch" type="button">Clear</button>
+            </div>
+          </form>
+
+          <div class="flight-plan-results">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">CALLSIGN</th>
+                  <th scope="col">ATYP</th>
+                  <th scope="col">FRUL</th>
+                  <th scope="col">ASSR</th>
+                  <th scope="col">EOBT</th>
+                  <th scope="col">DOF</th>
+                  <th scope="col">ADEP</th>
+                  <th scope="col">ADES</th>
+                  <th scope="col">State</th>
+                </tr>
+              </thead>
+              <tbody id="flightPlanResults"></tbody>
+            </table>
+            <p id="flightPlanResultCount" class="flight-plan-result-count" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <form id="flightPlanDetailForm" class="flight-plan-detail" aria-label="Flight plan detail">
+          <div class="flight-plan-strip">
+            <button id="newFromSelectedTrack" type="button">New From</button>
+            <button id="modifyFlightPlan" type="button">Modify</button>
+            <span>Read</span>
+            <output id="flightPlanReadTime">--:--:--</output>
+            <output id="flightPlanStatusText">ACTIVE</output>
+            <output id="flightPlanCoordination">Coordinated</output>
+          </div>
+
+          <div class="flight-plan-field-grid">
+            <label>CALLSIGN <input id="fpCallsign" name="callsign" readonly /></label>
+            <label>FRUL <input id="fpFrul" name="frul" /></label>
+            <label>FTYP <input id="fpFtyp" name="ftyp" /></label>
+            <label>NRAC <input id="fpNrac" name="nrac" /></label>
+            <label>ATYP/W <input id="fpAtyp" name="atyp" /></label>
+            <label>COM/NAV <input id="fpComNav" name="comnav" /></label>
+            <label>SURV <input id="fpSurv" name="surv" /></label>
+            <label>ADEP <input id="fpAdep" name="adep" /></label>
+            <label>EOBT <input id="fpEobt" name="eobt" /></label>
+            <label>DOF <input id="fpDof" name="dof" /></label>
+            <label>ADES <input id="fpAdes" name="ades" /></label>
+            <label>EET <input id="fpEet" name="eet" /></label>
+            <label>ALTN <input id="fpAltn" name="altn" /></label>
+            <label>TAS <input id="fpTas" name="tas" /></label>
+            <label>RFL <input id="fpRfl" name="rfl" /></label>
+            <label>ATOW <input id="fpAtow" name="atow" /></label>
+            <label>ETD <input id="fpEtd" name="etd" /></label>
+            <label>ETB <input id="fpEtb" name="etb" /></label>
+            <label>PSSR <input id="fpPssr" name="pssr" /></label>
+            <label>ASSR <input id="fpAssr" name="assr" /></label>
+            <label>REGN <input id="fpRegn" name="regn" /></label>
+            <label>COPN <input id="fpCopn" name="copn" /></label>
+            <label>ETN <input id="fpEtn" name="etn" /></label>
+            <label>PEL <input id="fpPel" name="pel" /></label>
+            <label>COPX <input id="fpCopx" name="copx" /></label>
+            <label>ETX <input id="fpEtx" name="etx" /></label>
+            <label>XFL <input id="fpXfl" name="xfl" /></label>
+            <label>State
+              <select id="fpState" name="state">
+                <option>ACTIVE</option>
+                <option>PENDING</option>
+                <option>INACTIVE</option>
+                <option>DELAY</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="route-field">Route
+            <textarea id="fpRoute" name="route"></textarea>
+          </label>
+
+          <div class="flight-plan-tabs" aria-label="Flight plan detail tabs">
+            <button type="button" class="active">Other</button>
+            <button type="button">Trajectory</button>
+            <button type="button">Supplementary</button>
+            <button type="button">Notes</button>
+            <button type="button">Formation</button>
+          </div>
+
+          <label class="remarks-field">Remarks
+            <textarea id="fpRemarks" name="remarks"></textarea>
+          </label>
+
+          <div class="flight-plan-footer">
+            <button id="refreshFlightPlan" type="button" aria-label="Refresh flight plan">Refresh</button>
+            <button type="submit">Apply</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
-    <script src="./app.js?v=leaflet-map-4"></script>
+    <script src="./app.js?v=flight-plan-1"></script>
   </body>
 </html>
