@@ -37,7 +37,139 @@ const flights = {
   },
 };
 
+const flightPlans = {
+  SAS482: {
+    callsign: "SAS482",
+    atyp: "B789",
+    frul: "I",
+    ftyp: "S",
+    nrac: "1",
+    assr: "4231",
+    eobt: "1406",
+    dof: "260723",
+    adep: "TJSJ",
+    ades: "ESSA",
+    state: "ACTIVE",
+    comnav: "SDE2E3FGHIJ1J3J5M1RWXYZ",
+    surv: "EB1D1",
+    eet: "0715",
+    altn: "EKCH",
+    tas: "N0488",
+    rfl: "F340",
+    atow: "203.4",
+    etd: "1416",
+    etb: "",
+    pssr: "4231",
+    regn: "SE-RSA",
+    copn: "MERLU",
+    etn: "015",
+    pel: "F330",
+    copx: "NARAK",
+    etx: "1422",
+    xfl: "F340",
+    route: "MERLU NARAK LUXOR NATX DOGAL BEXET",
+    remarks: "PBN/A1B1C1D1O1S2 DOF/260723 REG/SERSA",
+  },
+  DLH219: {
+    callsign: "DLH219",
+    atyp: "A359",
+    frul: "I",
+    ftyp: "S",
+    nrac: "1",
+    assr: "2740",
+    eobt: "1420",
+    dof: "260723",
+    adep: "TJSJ",
+    ades: "EDDF",
+    state: "ACTIVE",
+    comnav: "SDE2E3FGHIJ1M1RWXYZ",
+    surv: "EB1D1",
+    eet: "0810",
+    altn: "EDDK",
+    tas: "N0476",
+    rfl: "F320",
+    atow: "218.7",
+    etd: "1432",
+    etb: "",
+    pssr: "2740",
+    regn: "D-AIXP",
+    copn: "VEBEK",
+    etn: "020",
+    pel: "F320",
+    copx: "DINAN",
+    etx: "1448",
+    xfl: "F320",
+    route: "VEBEK DINAN ARFOX OTRON NATY MALOT",
+    remarks: "PBN/A1B1C1D1L1O1S2 NAV/RNVD1E2A1",
+  },
+  BAW771: {
+    callsign: "BAW771",
+    atyp: "B772",
+    frul: "I",
+    ftyp: "S",
+    nrac: "1",
+    assr: "6152",
+    eobt: "1455",
+    dof: "260723",
+    adep: "TJSJ",
+    ades: "EGLL",
+    state: "ACTIVE",
+    comnav: "SDE2E3FGHIJ1J5M1RWXYZ",
+    surv: "EB1D1",
+    eet: "0740",
+    altn: "EGKK",
+    tas: "N0482",
+    rfl: "F360",
+    atow: "236.1",
+    etd: "1507",
+    etb: "",
+    pssr: "6152",
+    regn: "G-VIIO",
+    copn: "ARFOX",
+    etn: "018",
+    pel: "F360",
+    copx: "TELMO",
+    etx: "1521",
+    xfl: "F360",
+    route: "ARFOX TELMO LAMER NATZ DINIM",
+    remarks: "PBN/A1B1C1D1L1O1S2 PER/C",
+  },
+  AFR108: {
+    callsign: "AFR108",
+    atyp: "A359",
+    frul: "I",
+    ftyp: "S",
+    nrac: "1",
+    assr: "7314",
+    eobt: "1505",
+    dof: "260723",
+    adep: "TJSJ",
+    ades: "LFPG",
+    state: "PENDING",
+    comnav: "SDE2E3FGHIJ1J5M1RWXYZ",
+    surv: "EB1D1",
+    eet: "0825",
+    altn: "LFPO",
+    tas: "N0477",
+    rfl: "F330",
+    atow: "221.8",
+    etd: "1518",
+    etb: "",
+    pssr: "7314",
+    regn: "F-HTYO",
+    copn: "MERLU",
+    etn: "011",
+    pel: "F330",
+    copx: "NARAK",
+    etx: "1530",
+    xfl: "F330",
+    route: "MERLU NARAK LUXOR NATX TIVLI",
+    remarks: "PBN/A1B1C1D1L1O1S2 DOF/260723 RMK/PENDING HANDOFF",
+  },
+};
+
 let selectedFlight = "SAS482";
+let selectedFlightPlan = "SAS482";
 let messageCounter = 1;
 let feedPaused = false;
 let lastTrackFrame = Date.now();
@@ -66,6 +198,11 @@ const eventLog = document.getElementById("eventLog");
 const radarScope = document.getElementById("radarScope");
 const connectionStatus = document.getElementById("connectionStatus");
 const tracks = [...document.querySelectorAll(".track")];
+const flightPlanDialog = document.getElementById("flightPlanDialog");
+const flightPlanResults = document.getElementById("flightPlanResults");
+const flightPlanDetailForm = document.getElementById("flightPlanDetailForm");
+const flightPlanSearchForm = document.getElementById("flightPlanSearchForm");
+const flightPlanResultCount = document.getElementById("flightPlanResultCount");
 const puertoRicoBoundarySources = [
   "./assets/puerto-rico-boundary.geojson",
   "https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/PRI/ADM2/geoBoundaries-PRI-ADM2_simplified.geojson",
@@ -244,6 +381,142 @@ document.querySelectorAll(".track").forEach((track) => {
 
 document.querySelectorAll(".strip").forEach((strip) => {
   strip.addEventListener("click", () => selectFlight(strip.textContent.trim().split(" ")[0]));
+});
+
+function getFlightPlanList() {
+  return Object.values(flightPlans);
+}
+
+function renderFlightPlanResults(results = getFlightPlanList()) {
+  flightPlanResults.replaceChildren();
+
+  results.forEach((plan) => {
+    const row = document.createElement("tr");
+    row.classList.toggle("active", plan.callsign === selectedFlightPlan);
+    row.dataset.flightPlan = plan.callsign;
+    row.innerHTML = `
+      <td><button type="button" data-select-flight-plan="${plan.callsign}">${plan.callsign}</button></td>
+      <td>${plan.atyp}</td>
+      <td>${plan.frul}</td>
+      <td>${plan.assr}</td>
+      <td>${plan.eobt}</td>
+      <td>${plan.dof}</td>
+      <td>${plan.adep}</td>
+      <td>${plan.ades}</td>
+      <td>${plan.state}</td>
+    `;
+    flightPlanResults.append(row);
+  });
+
+  flightPlanResultCount.textContent = `${results.length} ${results.length === 1 ? "match" : "matches"} found`;
+}
+
+function populateFlightPlanDetail(callsign) {
+  const plan = flightPlans[callsign];
+  if (!plan) return;
+
+  selectedFlightPlan = callsign;
+  Object.entries(plan).forEach(([key, value]) => {
+    const field = flightPlanDetailForm.elements[key];
+    if (field) field.value = value;
+  });
+
+  document.getElementById("flightPlanReadTime").textContent = new Date().toISOString().slice(11, 19);
+  document.getElementById("flightPlanStatusText").textContent = plan.state;
+  document.getElementById("flightPlanCoordination").textContent = plan.state === "PENDING" ? "Coordination pending" : "Coordinated";
+  renderFlightPlanResults(applyFlightPlanSearch());
+}
+
+function applyFlightPlanSearch() {
+  const data = new FormData(flightPlanSearchForm);
+  const checkedStates = data.getAll("state");
+  const criteria = {
+    callsign: data.get("callsign").trim().toUpperCase(),
+    adep: data.get("adep").trim().toUpperCase(),
+    ades: data.get("ades").trim().toUpperCase(),
+    eobt: data.get("eobt").trim(),
+    dof: data.get("dof").trim(),
+  };
+
+  return getFlightPlanList().filter((plan) => {
+    const stateMatches = checkedStates.length === 0 || checkedStates.includes(plan.state);
+    return stateMatches
+      && plan.callsign.includes(criteria.callsign)
+      && plan.adep.includes(criteria.adep)
+      && plan.ades.includes(criteria.ades)
+      && plan.eobt.includes(criteria.eobt)
+      && plan.dof.includes(criteria.dof);
+  });
+}
+
+function openFlightPlan(callsign = selectedFlight) {
+  selectedFlightPlan = flightPlans[callsign] ? callsign : Object.keys(flightPlans)[0];
+  renderFlightPlanResults();
+  populateFlightPlanDetail(selectedFlightPlan);
+  flightPlanDialog.showModal();
+}
+
+document.getElementById("openFlightPlan").addEventListener("click", () => openFlightPlan());
+
+flightPlanSearchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const results = applyFlightPlanSearch();
+  renderFlightPlanResults(results);
+  if (results.length > 0) populateFlightPlanDetail(results[0].callsign);
+});
+
+document.getElementById("clearFlightPlanSearch").addEventListener("click", () => {
+  flightPlanSearchForm.reset();
+  flightPlanSearchForm.querySelectorAll('[name="state"]').forEach((checkbox) => {
+    checkbox.checked = true;
+  });
+  renderFlightPlanResults();
+  populateFlightPlanDetail(selectedFlightPlan);
+});
+
+flightPlanResults.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-select-flight-plan]");
+  if (!button) return;
+  populateFlightPlanDetail(button.dataset.selectFlightPlan);
+  addLog(`${button.dataset.selectFlightPlan} flight plan selected.`);
+});
+
+document.getElementById("newFromSelectedTrack").addEventListener("click", () => {
+  populateFlightPlanDetail(selectedFlight);
+  addLog(`${selectedFlight} flight plan loaded from selected track.`);
+});
+
+document.getElementById("modifyFlightPlan").addEventListener("click", () => {
+  document.getElementById("fpRoute").focus();
+  addLog(`${selectedFlightPlan} flight plan opened for modification.`);
+});
+
+document.getElementById("refreshFlightPlan").addEventListener("click", () => {
+  populateFlightPlanDetail(selectedFlightPlan);
+  addLog(`${selectedFlightPlan} flight plan refreshed.`);
+});
+
+flightPlanDetailForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(flightPlanDetailForm);
+  const callsign = data.get("callsign");
+  const plan = flightPlans[callsign];
+  if (!plan) return;
+
+  Object.keys(plan).forEach((key) => {
+    if (key === "callsign") return;
+    if (data.has(key)) plan[key] = data.get(key).trim().toUpperCase();
+  });
+
+  if (flights[callsign]) {
+    flights[callsign].level = plan.rfl.replace(/^F/, "FL");
+    flights[callsign].route = `${plan.adep} - ${plan.ades}`;
+    flights[callsign].state = plan.state === "PENDING" ? "Pending" : plan.state === "ACTIVE" ? "Coordinated" : "Monitoring";
+    if (selectedFlight === callsign) selectFlight(callsign);
+  }
+
+  populateFlightPlanDetail(callsign);
+  addLog(`${callsign} flight plan applied.`);
 });
 
 const toggleRangeRings = document.getElementById("toggleRangeRings");
