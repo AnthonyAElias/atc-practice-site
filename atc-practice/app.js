@@ -183,6 +183,12 @@ const trackStates = {
   AFR108: { x: 44, y: 26, vx: -0.55, vy: 0.95 },
 };
 
+Object.entries(trackStates).forEach(([callsign, state]) => {
+  state.heading = Number(flights[callsign].heading);
+  state.targetHeading = null;
+  state.speed = Math.hypot(state.vx, state.vy);
+});
+
 const details = {
   title: document.getElementById("detailTitle"),
   status: document.getElementById("trackStatus"),
@@ -347,6 +353,54 @@ function addLog(message) {
   const item = document.createElement("li");
   item.textContent = `${new Date().toISOString().slice(11, 19)}Z ${message}`;
   eventLog.prepend(item);
+}
+
+function normalizeHeading(heading) {
+  return ((heading % 360) + 360) % 360;
+}
+
+function formatHeading(heading) {
+  const normalized = normalizeHeading(Math.round(heading));
+  return String(normalized === 0 ? 360 : normalized).padStart(3, "0");
+}
+
+function headingFromVelocity(state) {
+  return normalizeHeading(Math.atan2(state.vx, -state.vy) * 180 / Math.PI);
+}
+
+function syncVelocityToHeading(state) {
+  const radians = normalizeHeading(state.heading) * Math.PI / 180;
+  state.vx = Math.sin(radians) * state.speed;
+  state.vy = -Math.cos(radians) * state.speed;
+}
+
+function parseAssignedHeading(value) {
+  const heading = Number(value);
+  if (!Number.isInteger(heading) || heading < 1 || heading > 360) return null;
+  return normalizeHeading(heading);
+}
+
+function turnTowardAssignedHeading(state, elapsedSeconds) {
+  if (state.targetHeading === null) return;
+
+  const turnRate = 18;
+  const current = normalizeHeading(state.heading);
+  const delta = ((state.targetHeading - current + 540) % 360) - 180;
+  const step = Math.sign(delta) * Math.min(Math.abs(delta), turnRate * elapsedSeconds);
+
+  state.heading = normalizeHeading(current + step);
+  syncVelocityToHeading(state);
+
+  if (Math.abs(delta) <= 0.5) {
+    state.heading = state.targetHeading;
+    state.targetHeading = null;
+    syncVelocityToHeading(state);
+  }
+}
+
+function updateDisplayedHeading(callsign) {
+  flights[callsign].heading = formatHeading(trackStates[callsign].heading);
+  if (selectedFlight === callsign) details.heading.textContent = flights[callsign].heading;
 }
 
 function selectFlight(callsign) {
@@ -566,6 +620,25 @@ document.getElementById("clearanceForm").addEventListener("submit", (event) => {
   event.preventDefault();
   const type = document.getElementById("clearanceType").value;
   const value = document.getElementById("clearanceValue").value.trim().toUpperCase();
+
+  if (type === "turn") {
+    const assignedHeading = parseAssignedHeading(value);
+    if (assignedHeading === null) {
+      document.getElementById("clearanceMessage").textContent = "Enter a heading from 001 to 360.";
+      return;
+    }
+
+    trackStates[selectedFlight].targetHeading = assignedHeading;
+    flights[selectedFlight].heading = formatHeading(trackStates[selectedFlight].heading);
+    flights[selectedFlight].clearance = `turn ${formatHeading(assignedHeading)}`;
+    details.heading.textContent = flights[selectedFlight].heading;
+    details.clearance.textContent = flights[selectedFlight].clearance;
+    document.getElementById("clearanceMessage").textContent = `${selectedFlight} turn clearance issued.`;
+    addLog(`${selectedFlight} turn heading ${formatHeading(assignedHeading)} issued.`);
+    event.currentTarget.reset();
+    return;
+  }
+
   const message = `${type} ${value}`.replace("maintain", "maintain level");
   flights[selectedFlight].clearance = message;
   details.clearance.textContent = message;
@@ -672,6 +745,7 @@ function keepInsideScope(state) {
   const dot = state.vx * nx + state.vy * ny;
   state.vx -= 2 * dot * nx;
   state.vy -= 2 * dot * ny;
+  state.heading = headingFromVelocity(state);
 }
 
 function keepTracksSeparated() {
@@ -697,8 +771,13 @@ function keepTracksSeparated() {
       second.x += nx * push;
       second.y += ny * push;
 
-      [first.vx, second.vx] = [second.vx, first.vx];
-      [first.vy, second.vy] = [second.vy, first.vy];
+      if (first.targetHeading === null && second.targetHeading === null) {
+        [first.vx, second.vx] = [second.vx, first.vx];
+        [first.vy, second.vy] = [second.vy, first.vy];
+        first.heading = headingFromVelocity(first);
+        second.heading = headingFromVelocity(second);
+      }
+
       keepInsideScope(first);
       keepInsideScope(second);
     }
@@ -711,10 +790,12 @@ function advanceTracks() {
   lastTrackFrame = now;
 
   if (!feedPaused) {
-    Object.values(trackStates).forEach((state) => {
+    Object.entries(trackStates).forEach(([callsign, state]) => {
+      turnTowardAssignedHeading(state, elapsedSeconds);
       state.x += state.vx * elapsedSeconds;
       state.y += state.vy * elapsedSeconds;
       keepInsideScope(state);
+      updateDisplayedHeading(callsign);
     });
     keepTracksSeparated();
     applyTrackPositions();
